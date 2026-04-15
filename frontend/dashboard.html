@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard - Intelligent Food Management</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ================= NAVBAR ================= -->
+  <div class="navbar">
+    <h2 id="ifms_name"><img src="../images/Home_logo.png" alt="This image Can't be Displayed" id="home_logo">  IFMS</h2>
+
+    <div class="notification-wrapper">
+      <span class="notification-icon" onclick="toggleNotifications()">🔔</span>
+      <span id="notifCount" class="notif-badge">0</span>
+    </div>
+
+
+    <div>
+      <button class="btn btn-primary" onclick="scrollToSection('active')">🟢 Active</button>
+      <button class="btn btn-primary" onclick="scrollToSection('expiring')">🟠 Expiring</button>
+      <button class="btn btn-primary" onclick="scrollToSection('expired')">🔴 Expired</button>
+
+      <a href="add-product.html">
+        <button class="btn btn-secondary">➕ Add Product</button>
+      </a>
+
+      <button class="btn btn-secondary" onclick="logout()">🚪 Logout</button>
+    </div>
+  </div>
+
+
+  <!-- =============NOTIFICATION PANEL=============== -->
+  <div id="notificationPanel" class="notification-panel hidden">
+    <div class="notif-header">
+      <span>Notifications</span>
+      <button onclick="clearAll()">Mark all as read</button>
+    </div>
+    <div id="notifList"></div>
+  </div>
+
+
+  <div class="user-bar">
+    <span class="user-icon" onclick="goProfile()" style="border: 1px solid rgba(0, 0, 0, 0.751); border-radius: 25px;">👤</span>
+    <span id="welcomeMsg" style="font-size: 22px; color: black;">Welcome 👋</span>
+  </div>
+
+
+  <!-- ================= SEARCH BAR ================= -->
+  <!-- <div class="search-container">
+    <span class="search-icon">🔍</span>
+    <input
+      type="text"
+      id="searchInput"
+      placeholder="Search products..."
+      onkeyup="searchProducts()"
+    >
+  </div> -->
+
+  <div class="top-actions">
+    <button class="sell-btn" onclick="toggleSellMode()">💰 Sell</button>
+    <div class="search-container">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="searchInput"
+            placeholder="Search products..."
+            onkeyup="searchProducts()">
+    </div>
+  </div>
+
+
+  <!-- ================= TITLE ================= -->
+  <h2 class="dashboard-title" id="dash_title">Food Expiry Dashboard</h2>
+
+  <!-- ================= ACTIVE SECTION ================= -->
+  <h3 id="active">🟢 Active Products</h3>
+  <div id="activeProducts" class="dashboard"></div>
+
+  <!-- ================= EXPIRING SECTION ================= -->
+  <h3 id="expiring">🟠 Expiring Soon</h3>
+  <div id="expiringProducts" class="dashboard"></div>
+
+  <!-- ================= EXPIRED SECTION ================= -->
+  <h3 id="expired">🔴 Expired Products</h3>
+  <div id="expiredProducts" class="dashboard"></div>
+
+
+
+
+  <!-- ================= SCRIPT ================= -->
+
+  <script>
+
+
+
+  //ADDING EVENT LISTENER TO GO TO HOME PAGE
+  let homeBtn=document.getElementById('home_logo');
+  homeBtn.addEventListener('click',()=>{
+    window.location='index.html';
+  })
+
+  let sellMode = false;
+  let sellMap = {}; // productId -> quantity
+
+
+
+  // ====================SELL CLICK EVERT LISTENER=====================
+
+  document.addEventListener("click", function (e) {
+  if (!sellMode) return;
+
+  // Do NOT exit sell mode when clicking inside qty box or card
+  if (
+    e.target.closest(".qty-box") ||
+    e.target.closest(".card") ||
+    e.target.closest(".sell-btn")
+  ) {
+    return;
+  }
+
+  // Clicked truly outside → apply sell
+  applySell();
+});
+
+
+//   document.addEventListener("click", function (e) {
+//   if (!sellMode) return;
+
+//   const sellBtn = document.querySelector(".sell-btn");
+//   if (sellBtn.contains(e.target)) return;
+
+//   applySell();
+// });
+
+
+
+
+  // ================= AUTH CHECK =================
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    alert("Please login first");
+    window.location.href = "login.html";
+  }
+
+
+
+  // ================PROFILE================
+
+  function goProfile() {
+    window.location.href = "profile.html";
+  }
+
+  // Load user name
+  fetch("http://localhost:5000/api/auth/profile", {
+    headers: {
+      "Authorization": "Bearer " + token
+    }
+  })
+  .then(res => res.json())
+  .then(user => {
+    const msg = user.name ? `Welcome, ${user.name} 👋😊` : "Welcome 👋😊";
+    document.getElementById("welcomeMsg").innerText = msg;
+  });
+
+
+  let allProducts = [];
+
+  // ================= FETCH PRODUCTS =================
+  fetch("http://localhost:5000/api/products", {
+    headers: {
+      "Authorization": "Bearer " + token
+    }
+  })
+  .then(res => {
+    if (!res.ok) {
+      throw new Error("Unauthorized or server error");
+    }
+    return res.json();
+  })
+  .then(data => {
+    allProducts = data;
+    renderProducts(allProducts);
+  })
+  .catch(err => {
+    console.error(err);
+    document.getElementById("activeProducts").innerHTML =
+      "<p style='color:red'>❌ Unable to load products</p>";
+  });
+
+
+  function renderProducts(products) {
+  const activeDiv = document.getElementById("activeProducts");
+  const expiringDiv = document.getElementById("expiringProducts");
+  const expiredDiv = document.getElementById("expiredProducts");
+
+  activeDiv.innerHTML = "";
+  expiringDiv.innerHTML = "";
+  expiredDiv.innerHTML = "";
+
+  if (products.length === 0) {
+    activeDiv.innerHTML = "<p>No matching products found</p> ";
+    return;
+  }
+
+  // ================= GROUP PRODUCTS =================
+  const activeProducts = products.filter(p => p.status === "Active");
+  const expiringProducts = products.filter(p => p.status === "Expiring Soon");
+  const expiredProducts = products.filter(p => p.status === "Expired");
+
+  // ================= SORT EACH GROUP =================
+  // More daysLeft → Less daysLeft
+  activeProducts.sort((a, b) => b.daysLeft - a.daysLeft);
+  expiringProducts.sort((a, b) => b.daysLeft - a.daysLeft);
+  expiredProducts.sort((a, b) => b.daysLeft - a.daysLeft);
+
+  // ================= RENDER FUNCTION =================
+
+  function renderList(list, container) {
+  list.forEach(p => {
+    const card = document.createElement("div");
+    card.className = `card ${p.color}`;
+
+    // Build card content
+    card.innerHTML = `
+      ${sellMode && p.status !== "Expired"? `
+        <!-- Quantity control OUTSIDE card content -->
+        <div class="qty-mini">
+          <button onclick="changeQty('${p._id}', -1)">➖</button>
+
+          <input
+            type="number"
+            min="0"
+            value="${sellMap[p._id] || 0}"
+            data-id="${p._id}"
+            oninput="setQty('${p._id}', this.value)"
+          >
+
+          <button onclick="changeQty('${p._id}', 1)">➕</button>
+        </div>
+      ` : ""}
+
+      <!-- Edit icon (top-left) -->
+      <span class="edit-icon" onclick="editProduct('${p._id}')">✏️</span>
+
+      <!-- Delete icon (bottom-right) -->
+      <span class="delete-icon" onclick="deleteProduct('${p._id}', '${p.productName}')">🗑️</span>
+
+      <!-- Card content -->
+      <h3>${p.icon} ${p.productName}</h3>
+      <p><b>Category:</b> ${p.category}</p>
+      <p><b>Stock:</b> ${p.stockCount}</p>
+      <p><b>Days Left:</b> ${p.daysLeft}</p>
+    `;
+
+    container.appendChild(card);
+  });
+}
+
+  // ================= RENDER ALL SECTIONS =================
+  renderList(activeProducts, activeDiv);
+  renderList(expiringProducts, expiringDiv);
+  renderList(expiredProducts, expiredDiv);
+}
+
+  // ================= SEARCH =================
+  function searchProducts() {
+    const query = document.getElementById("searchInput").value.toLowerCase();
+
+    const filtered = allProducts.filter(p =>
+      p.productName.toLowerCase().includes(query) ||
+      p.category.toLowerCase().includes(query) ||
+      p.status.toLowerCase().includes(query) ||
+      String(p.daysLeft).includes(query) ||
+      String(p.stockCount).includes(query)
+    );
+
+    renderProducts(filtered);
+  }
+
+// =================NOTIFICATION FUNCTION=====================
+
+  function toggleNotifications() {
+  document.getElementById("notificationPanel").classList.toggle("hidden");
+}
+
+
+
+function loadNotifications() {
+  fetch("http://localhost:5000/api/notifications", {
+    headers: { 
+      "Authorization": "Bearer " + token 
+    }
+  })
+  .then(res => res.json())
+  .then(data => {
+    const list = document.getElementById("notifList");
+    list.innerHTML = "";
+
+    // show only UNREAD notifications
+    const unreadNotifications = data.filter(n => !n.isRead);
+
+    // update bell badge count
+    document.getElementById("notifCount").innerText =
+      unreadNotifications.length;
+
+    // if no notifications
+    if (unreadNotifications.length === 0) {
+      list.innerHTML = `<p style="padding:15px;color:#777">
+        No new notifications
+      </p>`;
+      return;
+    }
+
+    // render notifications
+    unreadNotifications.forEach(n => {
+      const div = document.createElement("div");
+      div.className = "notif-item";
+      div.innerHTML = `
+        <span>${n.message}</span>
+        <button onclick="markRead('${n._id}')">✓</button>
+      `;
+      list.appendChild(div);
+    });
+  })
+  .catch(err => console.error(err));
+}
+
+
+
+  // ==============MARK AS READ==============
+
+function markRead(id) {
+  const notifDiv = event.target.closest(".notif-item");
+  notifDiv.classList.add("notif-fade-out");
+
+  setTimeout(() => {
+    fetch(`http://localhost:5000/api/notifications/${id}/read`, {
+      method: "PUT",
+      headers: {
+        "Authorization": "Bearer " + token
+      }
+    })
+    .then(() => loadNotifications());
+  }, 350);
+}
+
+
+    // ==============CLEAR ALL NOTIFICATIONS================
+
+function clearAll() {
+  fetch("http://localhost:5000/api/notifications/read-all", {
+    method: "PUT",
+    headers: {
+      "Authorization": "Bearer " + token
+    }
+  })
+  .then(() => loadNotifications());
+}
+loadNotifications();
+
+
+
+
+
+
+function loadProductsAgain() {
+  renderProducts(allProducts);
+}
+
+// function loadProductsAgain() {
+//   fetch("http://localhost:5000/api/products", {
+//     headers: {
+//       "Authorization": "Bearer " + token
+//     }
+//   })
+//   .then(res => res.json())
+//   .then(data => {
+//     allProducts = data;        // update cache
+//     filterAndRender();         // re-render sections
+//   })
+//   .catch(err => console.error(err));
+// }
+
+
+
+
+function toggleSellMode() {
+  sellMode = !sellMode;
+  sellMap = {};
+  loadProductsAgain();
+}
+
+
+          // ${sellMode ? `
+          // <div class="qty-box">
+          //   <button onclick="changeQty('${p._id}', -1)"></button>
+          //   // <input type="number" min="0" value="0"
+          //   //       onchange="setQty('${p._id}', this.value)">
+          //   <input
+          //       type="number"
+          //       min="0"
+          //       data-id="${p._id}"
+          //       value="${sellMap[p._id] || 0}"
+          //       oninput="setQty('${p._id}', this.value)">
+
+          //   <button onclick="changeQty('${p._id}', 1)"></button>
+          // </div>` : ""}
+
+
+
+
+// ==============QUANTITY HANDLERS==============
+// function changeQty(id, delta) {
+//   sellMap[id] = (sellMap[id] || 0) + delta;
+//   if (sellMap[id] < 0) sellMap[id] = 0;
+//   loadProductsAgain();
+// }
+// function changeQty(id, delta) {
+//   sellMap[id] = (sellMap[id] || 0) + delta;
+//   if (sellMap[id] < 0) sellMap[id] = 0;
+
+//   // update only input value, NOT re-render
+//   const input = document.querySelector(`input[data-id="${id}"]`);
+//   if (input) input.value = sellMap[id];
+// }
+
+function changeQty(id, delta) {
+  let current = sellMap[id] || 0;
+  current += delta;
+
+  if (current < 0) current = 0;
+
+  sellMap[id] = current;
+
+  // update ONLY the input value (no re-render)
+  const input = document.querySelector(`input[data-id="${id}"]`);
+  if (input) input.value = current;
+}
+
+
+
+function setQty(id, value) {
+  sellMap[id] = Math.max(0, parseInt(value || 0));
+}
+
+
+
+
+// ================================APPLY SELL FUNCTION=============================
+async function applySell() {
+  sellMode = false;
+
+  const requests = [];
+
+  Object.keys(sellMap).forEach(id => {
+    if (sellMap[id] > 0) {
+      requests.push(
+        fetch(`http://localhost:5000/api/products/sell/${id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token
+          },
+          body: JSON.stringify({
+            quantity: sellMap[id]
+          })
+        })
+      );
+    }
+  });
+
+  // wait for backend (delete/update) to finish
+  await Promise.all(requests);
+
+  sellMap = {};
+
+  // 🔥 IMPORTANT: fetch fresh products
+  loadProductsAgain();
+}
+
+
+
+
+      // ===========CLOSE NOTIFICATION BAR============
+document.addEventListener("click", function (event) {
+  const panel = document.getElementById("notificationPanel");
+  const bell = document.querySelector(".notification-wrapper");
+
+  if (!panel.contains(event.target) && !bell.contains(event.target)) {
+    panel.classList.add("hidden");
+  }
+});
+
+
+  // ================= SCROLL =================
+  function scrollToSection(id) {
+    document.getElementById(id).scrollIntoView({
+      behavior: "smooth"
+    });
+  }
+
+  // ================= DELETE =================
+  function deleteProduct(id, name) {
+    if (!confirm(`Do you want to delete "${name}"?`)) return;
+
+    fetch(`http://localhost:5000/api/products/delete/${id}`, {
+      method: "DELETE",
+      headers: {
+        "Authorization": "Bearer " + token
+      }
+    })
+    .then(res => res.json())
+    .then(() => location.reload())
+    .catch(err => console.error(err));
+  }
+
+  // ================= EDIT =================
+  function editProduct(id) {
+    localStorage.setItem("editProductId", id);
+    window.location.href = "edit-product.html";
+  }
+
+  // ================= LOGOUT =================
+  function logout() {
+    localStorage.removeItem("token");
+    window.location.href = "login.html";
+  }
+</script>
+
+
+</body>
+</html>

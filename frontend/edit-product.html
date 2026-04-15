@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Edit Product</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="home">
+
+  <h1 id="editProdName">✏️Edit Product</h1>
+
+  <input id="productName" type="text" placeholder="Product Name" class="editPrd"><br><br>
+
+  <input id="category" type="text" placeholder="Category" class="editPrd"><br><br>
+
+  <input id="expiryDate" type="date" class="editPrd"><br><br>
+
+  <input id="stockCount" type="number" placeholder="Stock Count" class="editPrd"><br><br>
+
+  <button class="btn btn-primary" onclick="updateProduct()" id="updateBtn">Update</button>
+
+  <script>
+    const token = localStorage.getItem("token");
+    const productId = localStorage.getItem("editProductId");
+
+    if (!token || !productId) {
+      alert("Invalid access");
+      window.location.href = "dashboard.html";
+    }
+
+    // =============================
+    // LOAD EXISTING PRODUCT DATA
+    // =============================
+    fetch(`http://localhost:5000/api/products/single/${productId}`, {
+      headers: {
+        "Authorization": "Bearer " + token
+      }
+    })
+    .then(res => res.json())
+    .then(product => {
+      document.getElementById("productName").value = product.productName;
+      document.getElementById("category").value = product.category;
+      document.getElementById("expiryDate").value =
+        product.expiryDate.split("T")[0]; // date format fix
+      document.getElementById("stockCount").value = product.stockCount;
+    })
+    .catch(err => {
+      console.error(err);
+      alert("Unable to load product data");
+    });
+
+    // =============================
+    // UPDATE PRODUCT
+    // =============================
+    function updateProduct() {
+      fetch(`http://localhost:5000/api/products/update/${productId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify({
+          productName: productName.value,
+          category: category.value,
+          expiryDate: expiryDate.value,
+          stockCount: stockCount.value
+        })
+      })
+      .then(res => res.json())
+      .then(() => {
+        alert("Product updated successfully");
+        window.location.href = "dashboard.html";
+      })
+      .catch(err => console.error(err));
+    }
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+
+<head>
+  <title>User Profile</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="home">
+
+  <h1>👤 My Profile</h1>
+
+  <!-- AVATARS -->
+  <div class="avatar-box">
+    <img src="https://i.pravatar.cc/100?img=1" onclick="selectAvatar(this.src)">
+    <img src="https://i.pravatar.cc/100?img=2" onclick="selectAvatar(this.src)">
+    <img src="https://i.pravatar.cc/100?img=3" onclick="selectAvatar(this.src)">
+    <img src="https://i.pravatar.cc/100?img=4" onclick="selectAvatar(this.src)">
+  </div>
+
+  <input id="name" placeholder="Name"><br><br>
+  <input id="email" disabled><br><br>
+
+  <input id="phone" placeholder="+91XXXXXXXXXX"><br><br>
+
+  <textarea id="about" rows="10" placeholder="About me..."></textarea><br><br>
+
+  <button class="btn btn-primary" onclick="updateProfile()">Save Profile</button>
+
+  <hr>
+
+  <h3 id="change_pass">🔐Change Password</h3>
+  <input id="regEmail" placeholder="Registered Gmail"><br><br>
+  <input id="newPass" type="password" placeholder="New Password"><br><br>
+  <input id="confirmPass" type="password" placeholder="Confirm Password"><br><br>
+
+  <button class="btn btn-secondary" id="changeBtn" onclick="changePassword()">Change Password</button>
+
+  <script>
+    const token = localStorage.getItem("token");
+    let selectedAvatar = "";
+
+    fetch("http://localhost:5000/api/auth/profile", {
+      headers: { "Authorization": "Bearer " + token }
+    })
+    .then(res => res.json())
+    .then(user => {
+      name.value = user.name || "";
+      email.value = user.email;
+      phone.value = user.phone || "";
+      about.value = user.about || "";
+      selectedAvatar = user.avatar || "";
+    });
+
+    function selectAvatar(src) {
+      selectedAvatar = src;
+      alert("Avatar selected");
+    }
+
+    function updateProfile() {
+      fetch("http://localhost:5000/api/auth/profile", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify({
+          name: name.value,
+          phone: phone.value,
+          about: about.value,
+          avatar: selectedAvatar
+        })
+      })
+      .then(res => res.json())
+      .then(data => alert(data.message));
+    }
+
+    function changePassword() {
+      if (!regEmail.value || !newPass.value) {
+        alert("All fields required");
+        return;
+      }
+
+      if (newPass.value !== confirmPass.value) {
+        alert("Passwords do not match");
+        return;
+      }
+
+      fetch("http://localhost:5000/api/auth/change-password", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify({
+          email: regEmail.value,
+          newPassword: newPass.value
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        alert(data.message || data.error);   // ✅ FIX
+      })
+      .catch(err => {
+        console.error(err);
+        alert("Something went wrong");
+      });
+    }
+  </script>
+
+</body>
+</html>

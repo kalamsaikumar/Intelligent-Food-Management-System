@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Register</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="home">
+
+  <h1 id="register">📝Register</h1>
+
+  <form action="" class="register_form">
+    <input id="name" type="text" placeholder="Name" required><br><br>
+    <input id="email" type="email" placeholder="Email" required><br><br>
+    <input id="password" type="password" placeholder="Password" required><br><br>
+  <button class="btn btn-secondary" id="registerBtn" onclick="register(event)">Register</button>  
+</form>
+
+  <p id="msg" class="user_msg"></p>
+
+  <script>
+    function register(event) {
+    event.preventDefault();  // ⭐ IMPORTANT
+
+    const name = document.getElementById("name").value;
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    fetch("http://localhost:5000/api/auth/register", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ name, email, password })
+    })
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById("msg").innerText = data.message || "Registered!";
+      if (data.message === "User registered successfully") {
+        setTimeout(() => {
+          window.location.href = "login.html";
+        }, 1000);
+      }
+    })
+    .catch(err => console.error(err));
+  }
+</script>
+
+</body>
+</html>

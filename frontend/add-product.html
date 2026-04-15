@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Add Product</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body >
+
+    <div class="navbar">
+      <h2 id="ifms_name"> <img src="../images/Home_logo.png" alt="This image Can't be Displayed" id="home_logo"> IFMS </h2>
+
+
+      <div>
+        <button class="btn btn-primary" onclick="scrollToSection('active')">🟢 Active</button>
+        <button class="btn btn-primary" onclick="scrollToSection('expiring')">🟠 Expiring</button>
+        <button class="btn btn-primary" onclick="scrollToSection('expired')">🔴 Expired</button>
+      
+        <button class="btn btn-secondary" onclick="logout()">🚪 Logout</button>
+      </div>
+  </div>
+
+  <div id="add-product-css">
+
+  <h1 id="addprodName">Add Product</h1>
+
+  <!-- PRODUCT NAME -->
+  <input id="productName" type="text" class="addProd" placeholder="Product Name"><br><br>
+
+  <!-- CATEGORY DROPDOWN -->
+  <select id="category" onchange="checkNewCategory()" class="addProd" style="width: 290px !important;">
+    <option value="" class="addProd">Select Category</option>
+  </select><br><br>
+
+  <!-- NEW CATEGORY BOX (HIDDEN INITIALLY) -->
+  <div id="newCategoryBox" style="display:none;">
+    <input id="newCategoryName" type="text" placeholder="New Category Name" class="addProd"><br><br>
+    <input id="reminderDays" type="number" placeholder="Reminder Days (e.g. 3, 5, 7)" class="addProd"><br><br>
+    <button class="btn btn-secondary" onclick="addCategory()" id="addCat">Add Category</button>
+    <br><br>
+  </div>
+
+  <!-- EXPIRY DATE -->
+  <input id="expiryDate" type="date" class="addProd"><br><br>
+
+  <!-- STOCK -->
+  <input id="stockCount" type="number" placeholder="Stock Count" class="addProd"><br><br>
+
+  <!-- ADD PRODUCT BUTTON -->
+  <button class="btn btn-primary" onclick="addProduct()" id="addProdBtn">Add Product</button>
+
+  <p id="msg"></p>
+
+  </div>
+
+  <script>
+    // =========================
+    // AUTH CHECK
+    // =========================
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      alert("Please login first");
+      window.location.href = "login.html";
+    }
+
+    // =========================
+    // LOAD USER CATEGORIES
+    // =========================
+    function loadCategories() {
+      fetch("http://localhost:5000/api/categories", {
+        headers: {
+          "Authorization": "Bearer " + token
+        }
+      })
+      .then(res => res.json())
+      .then(data => {
+        const select = document.getElementById("category");
+
+        // clear existing options (except first)
+        select.innerHTML = '<option value="">Select Category</option>';
+
+        data.forEach(cat => {
+          const opt = document.createElement("option");
+          opt.value = cat.name;
+          opt.text = cat.name + " (Remind " + cat.reminderDays + " days before)";
+          select.appendChild(opt);
+        });
+
+        // add "Add New Category" option
+        const addOpt = document.createElement("option");
+        addOpt.value = "ADD_NEW";
+        addOpt.text = "➕ Add New Category";
+        select.appendChild(addOpt);
+      })
+      .catch(err => console.error(err));
+    }
+
+    // =========================
+    // SHOW / HIDE NEW CATEGORY BOX
+    // =========================
+    function checkNewCategory() {
+      const value = document.getElementById("category").value;
+      document.getElementById("newCategoryBox").style.display =
+        value === "ADD_NEW" ? "block" : "none";
+    }
+
+    // =========================
+    // ADD NEW CATEGORY
+    // =========================
+    function addCategory() {
+      const name = document.getElementById("newCategoryName").value;
+      const reminderDays = document.getElementById("reminderDays").value;
+
+      if (!name || !reminderDays) {
+        alert("Please enter category name and reminder days");
+        return;
+      }
+
+      fetch("http://localhost:5000/api/categories/add", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify({ name, reminderDays })
+      })
+      .then(res => res.json())
+      .then(data => {
+        alert(data.message || "Category added");
+        document.getElementById("newCategoryName").value = "";
+        document.getElementById("reminderDays").value = "";
+        document.getElementById("newCategoryBox").style.display = "none";
+        loadCategories(); // reload dropdown
+      })
+      .catch(err => console.error(err));
+    }
+
+    // =========================
+    // ADD PRODUCT
+    // =========================
+    function addProduct() {
+      const productName = document.getElementById("productName").value;
+      const category = document.getElementById("category").value;
+      const expiryDate = document.getElementById("expiryDate").value;
+      const stockCount = document.getElementById("stockCount").value;
+
+      if (!productName || !category || category === "ADD_NEW") {
+        alert("Please enter product name and select a valid category");
+        return;
+      }
+
+      fetch("http://localhost:5000/api/products/add", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify({
+          productName,
+          category,
+          expiryDate,
+          stockCount
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById("msg").innerText = data.message;
+        if (data.message === "Product added successfully") {
+          setTimeout(() => {
+            window.location.href = "dashboard.html";
+          }, 1000);
+        }
+      })
+      .catch(err => console.error(err));
+    }
+
+    // =========================
+    // INITIAL LOAD
+    // =========================
+    loadCategories();
+
+    function logout() {
+        localStorage.removeItem("token");
+        window.location.href = "login.html";
+    }
+
+  </script>
+
+</body>
+</html>

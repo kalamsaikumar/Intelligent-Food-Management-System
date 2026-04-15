@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Login</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="home">
+
+  <form class="login" onsubmit="login(event)">
+    <h1>🔐Login</h1>
+    <input id="email" type="email" placeholder="Email" required><br><br>
+    <input id="password" type="password" placeholder="Password" required><br><br>
+    <p >
+      <a href="forgot-password.html" class="forget-pass">Forgot Password?</a>
+    </p>
+    <button class="btn btn-primary" id="loginBtn">Login</button>
+    <p id="msg"></p>
+</form>
+
+  <script>
+      function login(event) {
+  event.preventDefault();  // ⭐ IMPORTANT
+
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  fetch("http://localhost:5000/api/auth/login", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ email, password })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.token) {
+      localStorage.setItem("token", data.token);
+      window.location.href = "dashboard.html";
+    } else {
+      document.getElementById("msg").innerText = data.message;
+    }
+  })
+  .catch(err => console.error(err));
+}
+  </script>
+
+</body>
+</html>
