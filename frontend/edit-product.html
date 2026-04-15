@@ -30,7 +30,7 @@
     // =============================
     // LOAD EXISTING PRODUCT DATA
     // =============================
-    fetch(`http://ifms-a5kz.onrender.com/api/products/single/${productId}`, {
+    fetch(`https://ifms-a5kz.onrender.com/api/products/single/${productId}`, {
       headers: {
         "Authorization": "Bearer " + token
       }
@@ -52,7 +52,7 @@
     // UPDATE PRODUCT
     // =============================
     function updateProduct() {
-      fetch(`http://ifms-a5kz.onrender.com/api/products/update/${productId}`, {
+      fetch(`https://ifms-a5kz.onrender.com/api/products/update/${productId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

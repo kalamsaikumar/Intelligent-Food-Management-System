@@ -38,7 +38,7 @@
     const token = localStorage.getItem("token");
     let selectedAvatar = "";
 
-    fetch("http://ifms-a5kz.onrender.com/api/auth/profile", {
+    fetch("https://ifms-a5kz.onrender.com/api/auth/profile", {
       headers: { "Authorization": "Bearer " + token }
     })
     .then(res => res.json())
@@ -56,7 +56,7 @@
     }
 
     function updateProfile() {
-      fetch("http://ifms-a5kz.onrender.com/api/auth/profile", {
+      fetch("https://ifms-a5kz.onrender.com/api/auth/profile", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -84,7 +84,7 @@
         return;
       }
 
-      fetch("http://ifms-a5kz.onrender.com/api/auth/change-password", {
+      fetch("https://ifms-a5kz.onrender.com/api/auth/change-password", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

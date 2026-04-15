@@ -67,7 +67,7 @@
     // LOAD USER CATEGORIES
     // =========================
     function loadCategories() {
-      fetch("http://ifms-a5kz.onrender.com/api/categories", {
+      fetch("https://ifms-a5kz.onrender.com/api/categories", {
         headers: {
           "Authorization": "Bearer " + token
         }
@@ -116,7 +116,7 @@
         return;
       }
 
-      fetch("http://ifms-a5kz.onrender.com/api/categories/add", {
+      fetch("https://ifms-a5kz.onrender.com/api/categories/add", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -149,7 +149,7 @@
         return;
       }
 
-      fetch("http://ifms-a5kz.onrender.com/api/products/add", {
+      fetch("https://ifms-a5kz.onrender.com/api/products/add", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -152,7 +152,7 @@
   }
 
   // Load user name
-  fetch("http://ifms-a5kz.onrender.com/api/auth/profile", {
+  fetch("https://ifms-a5kz.onrender.com/api/auth/profile", {
     headers: {
       "Authorization": "Bearer " + token
     }
@@ -167,7 +167,7 @@
   let allProducts = [];
 
   // ================= FETCH PRODUCTS =================
-  fetch("http://ifms-a5kz.onrender.com/api/products", {
+  fetch("https://ifms-a5kz.onrender.com/api/products", {
     headers: {
       "Authorization": "Bearer " + token
     }
@@ -287,7 +287,7 @@
 
 
 function loadNotifications() {
-  fetch("http://ifms-a5kz.onrender.com/api/notifications", {
+  fetch("https://ifms-a5kz.onrender.com/api/notifications", {
     headers: { 
       "Authorization": "Bearer " + token 
     }
@@ -335,7 +335,7 @@ function markRead(id) {
   notifDiv.classList.add("notif-fade-out");
 
   setTimeout(() => {
-    fetch(`http://ifms-a5kz.onrender.com/api/notifications/${id}/read`, {
+    fetch(`https://ifms-a5kz.onrender.com/api/notifications/${id}/read`, {
       method: "PUT",
       headers: {
         "Authorization": "Bearer " + token
@@ -349,7 +349,7 @@ function markRead(id) {
     // ==============CLEAR ALL NOTIFICATIONS================
 
 function clearAll() {
-  fetch("http://ifms-a5kz.onrender.com/api/notifications/read-all", {
+  fetch("https://ifms-a5kz.onrender.com/api/notifications/read-all", {
     method: "PUT",
     headers: {
       "Authorization": "Bearer " + token
@@ -369,7 +369,7 @@ function loadProductsAgain() {
 }
 
 // function loadProductsAgain() {
-//   fetch("http://ifms-a5kz.onrender.com/api/products", {
+//   fetch("https://ifms-a5kz.onrender.com/api/products", {
 //     headers: {
 //       "Authorization": "Bearer " + token
 //     }
@@ -456,7 +456,7 @@ async function applySell() {
   Object.keys(sellMap).forEach(id => {
     if (sellMap[id] > 0) {
       requests.push(
-        fetch(`http://ifms-a5kz.onrender.com/api/products/sell/${id}`, {
+        fetch(`https://ifms-a5kz.onrender.com/api/products/sell/${id}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -504,7 +504,7 @@ document.addEventListener("click", function (event) {
   function deleteProduct(id, name) {
     if (!confirm(`Do you want to delete "${name}"?`)) return;
 
-    fetch(`http://ifms-a5kz.onrender.com/api/products/delete/${id}`, {
+    fetch(`https://ifms-a5kz.onrender.com/api/products/delete/${id}`, {
       method: "DELETE",
       headers: {
         "Authorization": "Bearer " + token
